@@ -1,24 +1,170 @@
-[![Deploy this example with Pulumi](https://www.pulumi.com/images/deploy-with-pulumi/dark.svg)](https://app.pulumi.com/new?template=https://github.com/pulumi/examples/tree/master/kubernetes-ts-guestbook/components#gh-light-mode-only)
-[![Deploy this example with Pulumi](https://get.pulumi.com/new/button-light.svg)](https://app.pulumi.com/new?template=https://github.com/pulumi/examples/tree/master/kubernetes-ts-guestbook/components#gh-dark-mode-only)
+# Kubernetes Guestbook Monitoring with Pulumi, Prometheus, and Grafana
 
-# Simple and component-based Kubernetes Guestbook apps
+## Project Overview
 
-A port of the standard [Kubernetes Guestbook](https://kubernetes.io/docs/tutorials/stateless-application/guestbook/)
-to Pulumi. This example shows you how to build and deploy a simple, multi-tier web application using Kubernetes and
-Docker, and consists of three components:
+This project extends the Kubernetes Guestbook application with monitoring using Prometheus and Grafana. The infrastructure is deployed and managed using Pulumi and Kubernetes.
 
-* A single-instance Redis master to store guestbook entries
-* Multiple replicated Redis instances to serve reads
-* Multiple web frontend instances
+The monitoring solution helps track Kubernetes pod health, application availability, and Prometheus targets.
 
-Unlike the original, which is defined in YAML and applied with `kubectl`, this version is authored in TypeScript and deployed with the Pulumi CLI.
+## Architecture
 
-There is an [interactive Tutorial available](https://www.pulumi.com/docs/tutorials/kubernetes/guestbook/) for
-this example. If this is your first time using Pulumi for Kubernetes, we recommend starting there.
+The project includes:
 
-This directory contains two variants of the Guestbook, each a standalone Pulumi project with its own README:
+- Guestbook frontend with 3 replicas
+- Redis leader
+- Redis replica
+- Prometheus for metrics collection
+- Grafana for monitoring dashboards
+- Node Exporter for node metrics
+- kube-state-metrics for Kubernetes resource metrics
 
-- [simple/](./simple) — a straight port of the original YAML.
-- [components/](./components) — demonstrates the benefits of using a real language, namely eliminating boilerplate through the use of real component abstractions.
+## Technologies
 
-Both variants provision the exact same Kubernetes Guestbook application, but showcase different aspects of Pulumi. Follow the README in whichever sub-directory you choose.
+- AWS-style cloud-native tools: Kubernetes, Docker
+- Pulumi with TypeScript
+- Minikube
+- Helm
+- Prometheus
+- Grafana
+- Node Exporter
+- kube-state-metrics
+
+## Project Structure
+
+```text
+kubernetes-ts-guestbook/
+├── components/
+├── simple/
+│   ├── grafana/
+│   ├── prometheus/
+│   ├── index.ts
+│   ├── package.json
+│   └── Pulumi.yaml
+└── README.md
+```
+
+## Prerequisites
+
+- Docker Desktop
+- Minikube
+- Kubernetes CLI (`kubectl`)
+- Node.js and npm
+- Pulumi CLI
+- Helm
+
+## Deployment
+
+Start Minikube:
+
+```bash
+minikube start --driver=docker
+```
+
+Go to the Pulumi project:
+
+```bash
+cd simple
+npm install
+```
+
+Configure the Grafana password as a Pulumi secret. Replace `YOUR_PASSWORD` with your own password:
+
+```bash
+pulumi config set --secret grafanaPassword YOUR_PASSWORD
+```
+
+Preview and deploy:
+
+```bash
+pulumi preview
+pulumi up
+```
+
+## Access Grafana
+
+Grafana is exposed through NodePort 30080.
+
+For local access from Windows, run:
+
+```bash
+kubectl port-forward svc/grafana-f35e58bd 3001:80 -n monitoring
+```
+
+Open:
+
+```text
+http://localhost:3001
+```
+
+Login:
+- Username: `admin`
+- Password: the password configured in Pulumi
+
+Keep the port-forward terminal running while using Grafana.
+
+## Access Prometheus
+
+Run:
+
+```bash
+kubectl port-forward svc/prometheus-978e0f70-server 9090:80 -n monitoring
+```
+
+Open:
+
+```text
+http://localhost:9090
+```
+
+## Monitoring and Verification
+
+The Grafana dashboard includes panels for:
+
+1. Guestbook Pod Readiness
+2. Prometheus Target Health
+3. Guestbook Pod Status
+
+Example PromQL queries:
+
+Check Prometheus targets:
+
+```promql
+up
+```
+
+Check Guestbook pod readiness:
+
+```promql
+kube_pod_status_ready{namespace="default",condition="true",pod=~"frontend.*|redis-leader.*|redis-replica.*"}
+```
+
+Check Guestbook pods in Running state:
+
+```promql
+kube_pod_status_phase{namespace="default",pod=~"frontend.*|redis-leader.*|redis-replica.*",phase="Running"}
+```
+
+The dashboard was verified with healthy Prometheus targets and running Guestbook pods.
+
+## Useful Kubernetes Commands
+
+```bash
+kubectl get pods
+kubectl get services
+kubectl get pods -n monitoring
+kubectl get services -n monitoring
+```
+
+## Cleanup
+
+To remove the deployed resources:
+
+```bash
+pulumi destroy
+```
+
+## Author
+
+Alice Blanche Ekane
+
+GitHub: https://github.com/aliceekane/guestbook-monitoring
