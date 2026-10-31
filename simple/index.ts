@@ -165,9 +165,10 @@ const grafana = new k8s.helm.v3.Release("grafana", {
         adminUser: "admin",
         adminPassword: config.require("grafanaPassword"),
         service: {
-            type: "ClusterIP",
-            port: 80,
-        },
+    type: "NodePort",
+    port: 80,
+    nodePort: 30080,
+},
         persistence: {
             enabled: false,
         },
@@ -196,6 +197,7 @@ const grafana = new k8s.helm.v3.Release("grafana", {
     dependsOn: [prometheus],
 });
 // Export monitoring information without exposing credentials.
-export const monitoringNamespaceName = monitoringNamespace.metadata.name;
-export const grafanaServiceName = "grafana";
-export const prometheusServiceName = "prometheus-978e0f70-server";
+// Grafana access information.
+export const grafanaUrl = "http://localhost:3001";
+export const grafanaAdminUsername = "admin";
+export const grafanaAdminPassword = pulumi.secret(config.require("grafanaPassword"));
