@@ -1,0 +1,9 @@
+node_modules/
+.terraform/
+*.log
+.env
+*.pem
+
+**/Pulumi.*.yaml
+
+**/Pulumi.*.yaml
